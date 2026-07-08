@@ -7,6 +7,7 @@ license      = "MIT OR Apache-2.0"
 repository   = "https://github.com/LiGoldragon/signal-mind-judge"
 description  = "Typed Mind judge request and reply Signal contract."
 publish      = false
+include      = ["Cargo.toml", "Cargo.lock", "README.md", "schema/**", "src/**", "tests/**"]
 
 [lib]
 name = "signal_mind_judge"
@@ -14,12 +15,14 @@ path = "src/lib.rs"
 
 [features]
 default = []
-nota-text = ["signal-frame/nota-text"]
+nota-text = ["dep:nota", "signal-domain/nota-text", "signal-frame/nota-text"]
 
 [dependencies]
-rkyv         = { version = "0.8", default-features = false, features = ["std", "bytecheck", "little_endian", "pointer_width_32", "unaligned"] }
-signal-frame = { git = "https://github.com/LiGoldragon/signal-frame.git", branch = "main", default-features = false }
-thiserror    = "2"
+nota          = { package = "nota", git = "https://github.com/LiGoldragon/nota-next.git", branch = "main", optional = true }
+rkyv          = { version = "0.8", default-features = false, features = ["std", "bytecheck", "little_endian", "pointer_width_32", "unaligned"] }
+signal-domain = { git = "https://github.com/LiGoldragon/signal-domain.git", branch = "main", default-features = false }
+signal-frame  = { git = "https://github.com/LiGoldragon/signal-frame.git", branch = "main", default-features = false }
+thiserror     = "2"
 
 [lints.rust]
 unsafe_code = "forbid"

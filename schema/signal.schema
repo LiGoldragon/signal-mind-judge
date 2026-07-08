@@ -1,6 +1,6 @@
-;; Initial Mind judge contract sketch.
-;; Source generation is destination work; the Rust source stub currently names
-;; the request and reply records directly.
+;; Mind accepted-knowledge judge contract sketch.
+;; Rust source owns this first vertical slice directly; this concept schema names
+;; the typed request/reply spine and payload records for generator alignment.
 [
   JudgeKnowledge
 ]
@@ -9,19 +9,20 @@
   RequestRejected
 ]
 {
-  JudgeKnowledge KnowledgeJudgmentRequest
-  KnowledgeJudged KnowledgeJudgment
+  JudgeKnowledge KnowledgeJudgePacket
+  KnowledgeJudged KnowledgeJudgeResponse
   RequestRejected MindJudgeRequestRejection
 
-  KnowledgeJudgmentRequest { SubmittedKnowledgeDomain SubmittedKnowledgeStatement RelevantKnowledgeNeighbors }
-  RelevantKnowledgeNeighbors (Vector RelevantKnowledgeNeighbor)
-  RelevantKnowledgeNeighbor { KnowledgeIdentity SubmittedKnowledgeDomain SubmittedKnowledgeStatement }
-  KnowledgeJudgment { KnowledgeJudgmentVerdict OptionalDiagnosticMessage.(Optional DiagnosticMessage) }
-  KnowledgeJudgmentVerdict [Accept Reject]
-  MindJudgeRequestRejection { DiagnosticMessage }
+  KnowledgeJudgePacket { Domain TextBody RelevantKnowledgeNeighbors }
+  RelevantKnowledgeNeighbors (Vector KnowledgeRecord)
+  KnowledgeRecord { KnowledgeIdentity Domain TextBody }
+  KnowledgeJudgeResponse { KnowledgeJudgeVerdict DiagnosticMessage.(Optional TextBody) }
+  KnowledgeJudgeVerdict [Accept Reject]
+  KnowledgeRejectionReason [NotKnowledge PrivateOrUnauthorized MeaningUnclear SemanticDuplicate ConflictsAcceptedKnowledge WrongDomain NeedsMoreSpecificShape]
+  MindJudgeRequestRejection { MindJudgeRequestRejectionReason TextBody }
+  MindJudgeRequestRejectionReason [InvalidRequest ConfigurationUnavailable ProviderUnavailable ProviderRejected ResponseFormatFailure]
 
-  SubmittedKnowledgeDomain String
-  SubmittedKnowledgeStatement String
+  Domain signal-domain.Domain
   KnowledgeIdentity String
-  DiagnosticMessage String
+  TextBody String
 }

@@ -19,75 +19,76 @@ pub enum Error {
     EmptyValue,
 }
 
+#[cfg_attr(
+    feature = "nota-text",
+    derive(nota::NotaDecode, nota::NotaDecodeTraced, nota::NotaEncode)
+)]
 #[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize, Clone, Debug, PartialEq, Eq)]
 pub enum MindJudgeRequest {
-    JudgeKnowledge(KnowledgeJudgmentRequest),
+    JudgeKnowledge(KnowledgeJudgePacket),
 }
 
+impl signal_frame::RequestPayload for MindJudgeRequest {}
+
+impl signal_frame::LogVariant for MindJudgeRequest {
+    fn log_variant(&self) -> u64 {
+        match self {
+            Self::JudgeKnowledge(_) => 1,
+        }
+    }
+}
+
+#[cfg_attr(
+    feature = "nota-text",
+    derive(nota::NotaDecode, nota::NotaDecodeTraced, nota::NotaEncode)
+)]
 #[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize, Clone, Debug, PartialEq, Eq)]
 pub enum MindJudgeReply {
-    KnowledgeJudged(KnowledgeJudgment),
+    KnowledgeJudged(KnowledgeJudgeResponse),
     RequestRejected(MindJudgeRequestRejection),
 }
 
+#[cfg_attr(
+    feature = "nota-text",
+    derive(nota::NotaDecode, nota::NotaDecodeTraced, nota::NotaEncode)
+)]
 #[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize, Clone, Debug, PartialEq, Eq)]
-pub struct KnowledgeJudgmentRequest {
-    submitted_domain: SubmittedKnowledgeDomain,
-    submitted_statement: SubmittedKnowledgeStatement,
-    relevant_neighbors: RelevantKnowledgeNeighbors,
+pub struct KnowledgeJudgePacket {
+    pub domain: signal_domain::Domain,
+    pub statement: TextBody,
+    pub relevant_neighbors: Vec<KnowledgeRecord>,
 }
 
-impl KnowledgeJudgmentRequest {
+impl KnowledgeJudgePacket {
     pub fn new(
-        submitted_domain: SubmittedKnowledgeDomain,
-        submitted_statement: SubmittedKnowledgeStatement,
-        relevant_neighbors: RelevantKnowledgeNeighbors,
+        domain: signal_domain::Domain,
+        statement: TextBody,
+        relevant_neighbors: Vec<KnowledgeRecord>,
     ) -> Self {
         Self {
-            submitted_domain,
-            submitted_statement,
+            domain,
+            statement,
             relevant_neighbors,
         }
     }
-
-    pub fn submitted_domain(&self) -> &SubmittedKnowledgeDomain {
-        &self.submitted_domain
-    }
-
-    pub fn submitted_statement(&self) -> &SubmittedKnowledgeStatement {
-        &self.submitted_statement
-    }
-
-    pub fn relevant_neighbors(&self) -> &RelevantKnowledgeNeighbors {
-        &self.relevant_neighbors
-    }
 }
 
+#[cfg_attr(
+    feature = "nota-text",
+    derive(nota::NotaDecode, nota::NotaDecodeTraced, nota::NotaEncode)
+)]
 #[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize, Clone, Debug, PartialEq, Eq)]
-pub struct RelevantKnowledgeNeighbors(Vec<RelevantKnowledgeNeighbor>);
-
-impl RelevantKnowledgeNeighbors {
-    pub fn new(neighbors: Vec<RelevantKnowledgeNeighbor>) -> Self {
-        Self(neighbors)
-    }
-
-    pub fn as_slice(&self) -> &[RelevantKnowledgeNeighbor] {
-        self.0.as_slice()
-    }
+pub struct KnowledgeRecord {
+    pub identity: KnowledgeIdentity,
+    pub domain: signal_domain::Domain,
+    pub statement: TextBody,
 }
 
-#[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize, Clone, Debug, PartialEq, Eq)]
-pub struct RelevantKnowledgeNeighbor {
-    identity: KnowledgeIdentity,
-    domain: SubmittedKnowledgeDomain,
-    statement: SubmittedKnowledgeStatement,
-}
-
-impl RelevantKnowledgeNeighbor {
+impl KnowledgeRecord {
     pub fn new(
         identity: KnowledgeIdentity,
-        domain: SubmittedKnowledgeDomain,
-        statement: SubmittedKnowledgeStatement,
+        domain: signal_domain::Domain,
+        statement: TextBody,
     ) -> Self {
         Self {
             identity,
@@ -95,86 +96,91 @@ impl RelevantKnowledgeNeighbor {
             statement,
         }
     }
-
-    pub fn identity(&self) -> &KnowledgeIdentity {
-        &self.identity
-    }
-
-    pub fn domain(&self) -> &SubmittedKnowledgeDomain {
-        &self.domain
-    }
-
-    pub fn statement(&self) -> &SubmittedKnowledgeStatement {
-        &self.statement
-    }
 }
 
+#[cfg_attr(
+    feature = "nota-text",
+    derive(nota::NotaDecode, nota::NotaDecodeTraced, nota::NotaEncode)
+)]
 #[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize, Clone, Debug, PartialEq, Eq)]
-pub struct KnowledgeJudgment {
-    verdict: KnowledgeJudgmentVerdict,
-    diagnostic_message: OptionalDiagnosticMessage,
+pub struct KnowledgeJudgeResponse {
+    pub verdict: KnowledgeJudgeVerdict,
+    pub diagnostic_message: Option<TextBody>,
 }
 
-impl KnowledgeJudgment {
-    pub fn new(
-        verdict: KnowledgeJudgmentVerdict,
-        diagnostic_message: OptionalDiagnosticMessage,
-    ) -> Self {
+impl KnowledgeJudgeResponse {
+    pub fn new(verdict: KnowledgeJudgeVerdict, diagnostic_message: Option<TextBody>) -> Self {
         Self {
             verdict,
             diagnostic_message,
         }
     }
-
-    pub fn verdict(&self) -> KnowledgeJudgmentVerdict {
-        self.verdict
-    }
-
-    pub fn diagnostic_message(&self) -> Option<&DiagnosticMessage> {
-        self.diagnostic_message.as_ref()
-    }
 }
 
-#[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
-pub enum KnowledgeJudgmentVerdict {
+#[cfg_attr(
+    feature = "nota-text",
+    derive(nota::NotaDecode, nota::NotaDecodeTraced, nota::NotaEncode)
+)]
+#[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize, Clone, Debug, PartialEq, Eq)]
+pub enum KnowledgeJudgeVerdict {
     Accept,
-    Reject,
+    Reject(KnowledgeRejectionReason),
 }
 
+#[cfg_attr(
+    feature = "nota-text",
+    derive(nota::NotaDecode, nota::NotaDecodeTraced, nota::NotaEncode)
+)]
+#[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize, Clone, Debug, PartialEq, Eq)]
+pub enum KnowledgeRejectionReason {
+    NotKnowledge,
+    PrivateOrUnauthorized,
+    MeaningUnclear,
+    SemanticDuplicate(KnowledgeIdentity),
+    ConflictsAcceptedKnowledge(Vec<KnowledgeIdentity>),
+    WrongDomain(signal_domain::Domain),
+    NeedsMoreSpecificShape,
+}
+
+#[cfg_attr(
+    feature = "nota-text",
+    derive(nota::NotaDecode, nota::NotaDecodeTraced, nota::NotaEncode)
+)]
 #[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct MindJudgeRequestRejection {
-    message: DiagnosticMessage,
+    pub reason: MindJudgeRequestRejectionReason,
+    pub message: TextBody,
 }
 
 impl MindJudgeRequestRejection {
-    pub fn new(message: DiagnosticMessage) -> Self {
-        Self { message }
-    }
-
-    pub fn message(&self) -> &DiagnosticMessage {
-        &self.message
+    pub fn new(reason: MindJudgeRequestRejectionReason, message: TextBody) -> Self {
+        Self { reason, message }
     }
 }
 
+#[cfg_attr(
+    feature = "nota-text",
+    derive(nota::NotaDecode, nota::NotaDecodeTraced, nota::NotaEncode)
+)]
 #[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize, Clone, Debug, PartialEq, Eq)]
-pub struct OptionalDiagnosticMessage(Option<DiagnosticMessage>);
-
-impl OptionalDiagnosticMessage {
-    pub fn new(message: Option<DiagnosticMessage>) -> Self {
-        Self(message)
-    }
-
-    pub fn as_ref(&self) -> Option<&DiagnosticMessage> {
-        self.0.as_ref()
-    }
+pub enum MindJudgeRequestRejectionReason {
+    InvalidRequest,
+    ConfigurationUnavailable,
+    ProviderUnavailable,
+    ProviderRejected,
+    ResponseFormatFailure,
 }
 
 macro_rules! non_empty_text_type {
     ($name:ident) => {
+        #[cfg_attr(
+            feature = "nota-text",
+            derive(nota::NotaDecode, nota::NotaDecodeTraced, nota::NotaEncode)
+        )]
         #[derive(
             rkyv::Archive, rkyv::Serialize, rkyv::Deserialize, Clone, Debug, PartialEq, Eq,
         )]
-        pub struct $name(String);
+        pub struct $name(pub String);
 
         impl $name {
             pub fn new(value: impl Into<String>) -> Result<Self, Error> {
@@ -192,7 +198,5 @@ macro_rules! non_empty_text_type {
     };
 }
 
-non_empty_text_type!(SubmittedKnowledgeDomain);
-non_empty_text_type!(SubmittedKnowledgeStatement);
 non_empty_text_type!(KnowledgeIdentity);
-non_empty_text_type!(DiagnosticMessage);
+non_empty_text_type!(TextBody);

@@ -19,7 +19,14 @@
           sha256 = "sha256-gh/xTkxKHL4eiRXzWv8KP7vfjSk61Iq48x47BEDFgfk=";
         };
         inherit (rust) craneLib toolchain;
-        src = rust.cleanSource { root = ./.; };
+        src = rust.cleanSource {
+          root = ./.;
+          extraFilters = [
+            (path: type:
+              type == "directory" && baseNameOf path == "schema"
+              || type == "regular" && baseNameOf path == "signal.schema")
+          ];
+        };
         commonArgs = { inherit src; strictDeps = true; };
         cargoArtifacts = craneLib.buildDepsOnly commonArgs;
       in
