@@ -20,7 +20,7 @@ nota-text = ["dep:nota", "signal-domain/nota-text", "signal-frame/nota-text"]
 [dependencies]
 nota          = { package = "nota", git = "https://github.com/LiGoldragon/nota-next.git", branch = "main", optional = true }
 rkyv          = { version = "0.8", default-features = false, features = ["std", "bytecheck", "little_endian", "pointer_width_32", "unaligned"] }
-signal-domain = { git = "https://github.com/LiGoldragon/signal-domain.git", branch = "main", default-features = false }
+signal-domain = { git = "https://github.com/LiGoldragon/signal-domain.git", rev = "801e1c5bcc824c9760e246205826e3c8e962d005", default-features = false }
 signal-frame  = { git = "https://github.com/LiGoldragon/signal-frame.git", branch = "main", default-features = false }
 thiserror     = "2"
 
