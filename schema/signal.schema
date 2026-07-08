@@ -1,0 +1,27 @@
+;; Initial Mind judge contract sketch.
+;; Source generation is destination work; the Rust source stub currently names
+;; the request and reply records directly.
+[
+  JudgeKnowledge
+]
+[
+  KnowledgeJudged
+  RequestRejected
+]
+{
+  JudgeKnowledge KnowledgeJudgmentRequest
+  KnowledgeJudged KnowledgeJudgment
+  RequestRejected MindJudgeRequestRejection
+
+  KnowledgeJudgmentRequest { SubmittedKnowledgeDomain SubmittedKnowledgeStatement RelevantKnowledgeNeighbors }
+  RelevantKnowledgeNeighbors (Vector RelevantKnowledgeNeighbor)
+  RelevantKnowledgeNeighbor { KnowledgeIdentity SubmittedKnowledgeDomain SubmittedKnowledgeStatement }
+  KnowledgeJudgment { KnowledgeJudgmentVerdict OptionalDiagnosticMessage.(Optional DiagnosticMessage) }
+  KnowledgeJudgmentVerdict [Accept Reject]
+  MindJudgeRequestRejection { DiagnosticMessage }
+
+  SubmittedKnowledgeDomain String
+  SubmittedKnowledgeStatement String
+  KnowledgeIdentity String
+  DiagnosticMessage String
+}
