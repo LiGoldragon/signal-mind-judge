@@ -4,8 +4,8 @@ use signal_frame::{
 };
 use signal_mind_judge::{
     KnowledgeIdentity, KnowledgeJudgePacket, KnowledgeJudgeResponse, KnowledgeJudgeVerdict,
-    KnowledgeRecord, KnowledgeRejectionReason, MindJudgeFrame, MindJudgeReply, MindJudgeRequest,
-    TextBody,
+    KnowledgeRecord, KnowledgeRejectionReason, MindJudgeFrame, MindJudgeFrameCodec, MindJudgeReply,
+    MindJudgeRequest, TextBody,
 };
 
 fn technology_domain() -> signal_domain::Domain {
@@ -56,6 +56,32 @@ fn judge_knowledge_request_round_trips_through_binary_frame() {
     let decoded = MindJudgeFrame::decode_length_prefixed(&encoded).unwrap();
 
     assert_eq!(decoded.body(), frame.body());
+}
+
+#[test]
+fn frame_codec_echoes_request_exchange_in_reply_frame() {
+    let codec = MindJudgeFrameCodec::with_exchange(1024 * 1024, exchange_identifier());
+    let request = MindJudgeRequest::JudgeKnowledge(KnowledgeJudgePacket::new(
+        technology_domain(),
+        TextBody::new("The contract owns frame exchange correlation.").unwrap(),
+        Vec::new(),
+    ));
+
+    let request_frame = codec.request_frame(request.clone());
+    let received = codec.request_from_frame(request_frame).unwrap();
+    let reply = MindJudgeReply::KnowledgeJudged(KnowledgeJudgeResponse::new(
+        KnowledgeJudgeVerdict::Accept,
+        None,
+    ));
+    let reply_frame = received.reply_frame(reply.clone());
+
+    match reply_frame.into_body() {
+        ExchangeFrameBody::Reply { exchange, reply: _ } => {
+            assert_eq!(exchange, exchange_identifier())
+        }
+        _ => panic!("expected reply frame"),
+    }
+    assert_eq!(received.into_request(), request);
 }
 
 #[test]
