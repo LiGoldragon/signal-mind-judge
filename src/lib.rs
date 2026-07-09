@@ -154,20 +154,45 @@ impl MindJudgeFrameCodec {
         frame: MindJudgeFrame,
     ) -> Result<MindJudgeReply, MindJudgeFrameCodecError> {
         match frame.into_body() {
-            MindJudgeFrameBody::Reply { reply, .. } => match reply {
-                Reply::Accepted { per_operation, .. } => match per_operation.into_head() {
-                    SubReply::Ok(payload) => Ok(payload),
-                    other => Err(MindJudgeFrameCodecError::Frame(format!(
-                        "unexpected sub-reply: {other:?}"
-                    ))),
-                },
-                Reply::Rejected { reason } => {
-                    Err(MindJudgeFrameCodecError::Frame(reason.to_string()))
-                }
-            },
+            MindJudgeFrameBody::Reply { reply, .. } => self.reply_from_reply(reply),
             _ => Err(MindJudgeFrameCodecError::UnexpectedFrame(
                 "expected mind judge reply",
             )),
+        }
+    }
+
+    pub fn correlated_reply_from_frame(
+        &self,
+        frame: MindJudgeFrame,
+        expected_exchange: signal_frame::ExchangeIdentifier,
+    ) -> Result<MindJudgeReply, MindJudgeFrameCodecError> {
+        match frame.into_body() {
+            MindJudgeFrameBody::Reply { exchange, reply } => {
+                if exchange != expected_exchange {
+                    return Err(MindJudgeFrameCodecError::Frame(format!(
+                        "mind judge reply exchange mismatch: expected {expected_exchange:?}, found {exchange:?}"
+                    )));
+                }
+                self.reply_from_reply(reply)
+            }
+            _ => Err(MindJudgeFrameCodecError::UnexpectedFrame(
+                "expected mind judge reply",
+            )),
+        }
+    }
+
+    fn reply_from_reply(
+        &self,
+        reply: Reply<MindJudgeReply>,
+    ) -> Result<MindJudgeReply, MindJudgeFrameCodecError> {
+        match reply {
+            Reply::Accepted { per_operation, .. } => match per_operation.into_head() {
+                SubReply::Ok(payload) => Ok(payload),
+                other => Err(MindJudgeFrameCodecError::Frame(format!(
+                    "unexpected sub-reply: {other:?}"
+                ))),
+            },
+            Reply::Rejected { reason } => Err(MindJudgeFrameCodecError::Frame(reason.to_string())),
         }
     }
 
@@ -194,6 +219,15 @@ impl MindJudgeFrameCodec {
     ) -> Result<MindJudgeReply, MindJudgeFrameCodecError> {
         let frame = self.read_frame(reader)?;
         self.reply_from_frame(frame)
+    }
+
+    pub fn read_correlated_reply(
+        &self,
+        reader: &mut impl Read,
+        expected_exchange: signal_frame::ExchangeIdentifier,
+    ) -> Result<MindJudgeReply, MindJudgeFrameCodecError> {
+        let frame = self.read_frame(reader)?;
+        self.correlated_reply_from_frame(frame, expected_exchange)
     }
 
     pub fn write_reply(
